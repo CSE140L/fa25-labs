@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<circuit>
+  <version>2</version>
+  <attributes/>
+  <visualElements>
+    <visualElement>
+      <elementName>Testcase</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>Part 1 Test</string>
+        </entry>
+        <entry>
+          <string>Testdata</string>
+          <testData>
+            <dataString>CLK CLR MIN_ADV HR_ADV SETUP_TIME SETUP_ALARM SECONDS MINUTES HOURS ALARM_EN BUZZ
+0   0   0       0      0          0           0       0       0     0        X
+
+# check design competability and clock ticking
+
+C   0   0       0      0          0           1       0       0     0        X
+C   0   0       0      0          0           2       0       0     0        X
+C   0   0       0      0          0           3       0       0     0        X</dataString>
+          </testData>
+        </entry>
+      </elementAttributes>
+      <pos x="760" y="240"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Testcase</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>Part 2 Test</string>
+        </entry>
+        <entry>
+          <string>Testdata</string>
+          <testData>
+            <dataString>CLK CLR MIN_ADV HR_ADV SETUP_TIME SETUP_ALARM SECONDS MINUTES HOURS ALARM_EN BUZZ
+0   0   0       0      0          0           X       X       X     0        X
+
+# check design competability and initial values
+
+C   1   0       0      0          0           1       1       1     0        X
+C   1   0       0      0          0           1       1       1     0        X
+C   0   0       0      0          0           2       1       1     0        X</dataString>
+          </testData>
+        </entry>
+      </elementAttributes>
+      <pos x="760" y="360"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Text</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Description</string>
+          <string>To run tests copy the &quot;Test&quot; components to your design 
+and press &quot;Run All Test Cases&quot;. 
+
+Produced table will show you matched and failed 
+test vectors if such present.
+
+Note that test only cover that your design compiles and has correct pins.
+So, passing those test does not gurantee you passing all actual test becnhes.</string>
+        </entry>
+      </elementAttributes>
+      <pos x="-340" y="200"/>
+    </visualElement>
+  </visualElements>
+  <wires/>
+  <measurementOrdering/>
+</circuit>
