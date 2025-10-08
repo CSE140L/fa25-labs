@@ -33,7 +33,7 @@
       <elementAttributes>
         <entry>
           <string>Label</string>
-          <string>RST</string>
+          <string>BEGIN</string>
         </entry>
       </elementAttributes>
       <pos x="380" y="420"/>
