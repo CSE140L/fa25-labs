@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robertson's Multiplication Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .table-cell-mono {
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 1px;
+        }
+        .table-container {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        [title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            background-color: #182B49;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 10;
+            transform: translate(-50%, -125%);
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            transition: all 0.2s;
+        }
+        .input-field:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            border-color: #00629B;
+            box-shadow: 0 0 0 2px #C6E4F5;
+        }
+        .radio-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .radio-group label, .toggle-group label {
+            cursor: pointer;
+            padding: 0.25rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            line-height: 1rem;
+            transition: all 0.2s;
+        }
+        .radio-group input:checked + label, .toggle-group input:checked + label {
+            background-color: #00629B;
+            color: white;
+            border-color: #00629B;
+        }
+        .toggle-group {
+            display: inline-flex;
+            background: #e5e7eb;
+            border-radius: 9999px;
+            padding: 0.25rem;
+        }
+        .toggle-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.5rem 1.5rem;
+            border: none;
+        }
+        .toggle-group input:checked + label {
+            background-color: white;
+            color: #182B49;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 id="header-title" class="text-3xl md:text-4xl font-bold text-[#182B49]">Robertson's 4-Bit Multiplication</h1>
+            <p class="text-gray-600 mt-2">A step-by-step simulator for 2's complement multiplication.</p>
+        </div>
+        
+        <!-- Bit Size Toggle -->
+        <div class="flex justify-center mb-6">
+            <div class="toggle-group">
+                <input type="radio" name="bit-toggle" value="4" id="4bit" class="hidden" checked>
+                <label for="4bit">4-Bit</label>
+                <input type="radio" name="bit-toggle" value="16" id="16bit" class="hidden">
+                <label for="16bit">16-Bit</label>
+            </div>
+        </div>
+
+
+        <!-- Input Section -->
+        <div class="p-6 bg-gray-50 rounded-xl border border-gray-200">
+            <div class="flex flex-col md:flex-row items-end justify-center gap-4 mb-6">
+                <!-- Multiplicand Input -->
+                <div class="input-group md:w-2/5">
+                    <label for="multiplicand" class="block text-sm font-medium text-gray-700 mb-1">Multiplicand (M)</label>
+                    <input type="text" id="multiplicand" value="-6" class="input-field">
+                     <div class="radio-group">
+                        <input type="radio" name="baseM" value="dec" id="decM" class="hidden" checked><label for="decM">Dec</label>
+                        <input type="radio" name="baseM" value="bin" id="binM" class="hidden"><label for="binM">Bin</label>
+                        <input type="radio" name="baseM" value="hex" id="hexM" class="hidden"><label for="hexM">Hex</label>
+                    </div>
+                </div>
+
+                <div class="text-2xl font-bold text-gray-400 md:pb-10">×</div>
+                
+                <!-- Multiplier Input -->
+                <div class="input-group md:w-2/5">
+                    <label for="multiplier" class="block text-sm font-medium text-gray-700 mb-1">Multiplier (Q)</label>
+                     <input type="text" id="multiplier" value="-2" class="input-field">
+                    <div class="radio-group">
+                        <input type="radio" name="baseQ" value="dec" id="decQ" class="hidden" checked><label for="decQ">Dec</label>
+                        <input type="radio" name="baseQ" value="bin" id="binQ" class="hidden"><label for="binQ">Bin</label>
+                        <input type="radio" name="baseQ" value="hex" id="hexQ" class="hidden"><label for="hexQ">Hex</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-center">
+                <button id="simulateBtn" class="w-full md:w-auto px-8 py-3 bg-[#00629B] text-white font-semibold rounded-lg shadow-md hover:bg-[#182B49] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00629B] transition duration-150 ease-in-out">
+                    Simulate
+                </button>
+            </div>
+        </div>
+        
+        <div id="message-box" class="text-center my-4 min-h-[24px]"></div>
+
+        <div id="results" class="hidden">
+            <h2 class="text-2xl font-semibold text-center mb-4 text-[#182B49]">Simulation Steps</h2>
+            <div class="table-container border border-gray-200 rounded-lg shadow-sm">
+                <table class="w-full text-sm text-left text-gray-600">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-center">Step</th>
+                            <th scope="col" class="px-6 py-3">Action</th>
+                            <th scope="col" class="px-6 py-3 table-cell-mono">A (Accumulator)</th>
+                            <th scope="col" class="px-6 py-3 table-cell-mono">Q (Multiplier)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="steps-table-body" class="bg-white"></tbody>
+                </table>
+            </div>
+
+            <div class="mt-6 p-6 bg-[#C6E4F5] rounded-xl border border-[#00629B] text-center">
+                 <h3 class="text-xl font-semibold text-[#182B49]">Final Result</h3>
+                 <div class="mt-2 space-y-2">
+                    <p class="text-lg text-gray-800">Binary (AQ): <span id="final-binary" class="font-mono bg-gray-200 px-2 py-1 rounded"></span></p>
+                    <p class="text-lg text-gray-800">Hexadecimal: <span id="final-hex" class="font-mono bg-gray-200 px-2 py-1 rounded"></span></p>
+                    <p class="text-lg text-gray-800">Decimal: <span id="final-decimal" class="font-semibold text-[#182B49] bg-[#FFCD00] px-3 py-1 rounded-md"></span></p>
+                 </div>
+                 <div id="verification-box" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const multiplicandInput = document.getElementById('multiplicand');
+    const multiplierInput = document.getElementById('multiplier');
+    const simulateBtn = document.getElementById('simulateBtn');
+    const resultsDiv = document.getElementById('results');
+    const stepsTableBody = document.getElementById('steps-table-body');
+    const finalBinarySpan = document.getElementById('final-binary');
+    const finalHexSpan = document.getElementById('final-hex');
+    const finalDecimalSpan = document.getElementById('final-decimal');
+    const messageBox = document.getElementById('message-box');
+    const headerTitle = document.getElementById('header-title');
+    const verificationBox = document.getElementById('verification-box');
+
+    let BITS = 4;
+    let MAX_VAL = 7;
+    let MIN_VAL = -8;
+
+    function toTwosComplement(n, bits) {
+        if (n >= 0) return n.toString(2).padStart(bits, '0');
+        return (Math.pow(2, bits) + n).toString(2).padStart(bits, '1');
+    }
+
+    function twosComplementToDecimal(bin, numBits) {
+        const bits = numBits || bin.length;
+        if (bits === 0) return 0;
+        if (bin[0] === '1') return Number(BigInt.asIntN(bits, BigInt('0b' + bin)));
+        return parseInt(bin, 2);
+    }
+    
+    function decimalToHex(n) {
+        if (n >= 0) return n.toString(16).toUpperCase();
+        return ((BigInt(1) << BigInt(BITS)) + BigInt(n)).toString(16).toUpperCase();
+    }
+
+    function decimalToHexResult(n) {
+        const resultBits = BITS * 2;
+        const twosComp = BigInt.asUintN(resultBits, BigInt(n));
+        return twosComp.toString(16).toUpperCase().padStart(resultBits / 4, '0');
+    }
+
+    function withTooltip(binaryString) {
+        const decimalValue = twosComplementToDecimal(binaryString, binaryString.length);
+        return `<span title="Decimal: ${decimalValue}">${binaryString}</span>`;
+    }
+
+    function formatQ(qString) {
+        const decimalValue = twosComplementToDecimal(qString, qString.length);
+        if (qString.length > 0) {
+            const msbs = qString.slice(0, -1);
+            const lsb = qString.slice(-1);
+            return `<span title="Decimal: ${decimalValue}">${msbs}<span class="font-bold text-[#00629B] underline">${lsb}</span></span>`;
+        }
+        return `<span title="Decimal: ${decimalValue}">${qString}</span>`;
+    }
+
+    function addBinary(bin1, bin2) {
+        const sum = BigInt(`0b${bin1}`) + BigInt(`0b${bin2}`);
+        let result = sum.toString(2);
+        if (result.length > BITS) result = result.slice(result.length - BITS);
+        else result = result.padStart(BITS, '0');
+        return result;
+    }
+
+    function arithmeticRightShift(a, q) {
+        const msbA = a[0];
+        const newA = msbA + a.slice(0, BITS - 1);
+        const newQ = a[BITS - 1] + q.slice(0, BITS - 1);
+        return { a: newA, q: newQ };
+    }
+
+    function customRightShift(a, q, multiplicandSignBit) {
+        const isAZero = !/[^0]/.test(a);
+        const bitToShiftIn = isAZero ? '0' : multiplicandSignBit;
+        const newA = bitToShiftIn + a.slice(0, BITS - 1);
+        const newQ = a[BITS - 1] + q.slice(0, BITS - 1);
+        return { a: newA, q: newQ };
+    }
+    
+    function parseNumber(value, base) {
+        if (!value) return NaN;
+        value = value.trim();
+        switch (base) {
+            case 'dec':
+                if (!/^-?\d+$/.test(value)) return NaN;
+                return parseInt(value, 10);
+            case 'bin':
+                if (!/^[01]+$/.test(value) || value.length > BITS) return NaN;
+                return twosComplementToDecimal(value, value.length);
+            case 'hex':
+                if (!/^[0-9a-fA-F]+$/.test(value) || value.length > (BITS / 4)) return NaN;
+                let num = parseInt(value, 16);
+                const signBit = 1 << (BITS - 1);
+                if (num & signBit) num -= (1 << BITS);
+                return num;
+            default: return NaN;
+        }
+    }
+
+    function validateInputs() {
+        const m_base = document.querySelector('input[name="baseM"]:checked').value;
+        const q_base = document.querySelector('input[name="baseQ"]:checked').value;
+        const m = parseNumber(multiplicandInput.value, m_base);
+        const q = parseNumber(multiplierInput.value, q_base);
+        if (isNaN(m) || isNaN(q)) return { isValid: false, error: "Please enter valid integers." };
+        if (m < MIN_VAL || m > MAX_VAL || q < MIN_VAL || q > MAX_VAL) {
+            return { isValid: false, error: `Inputs must be between ${MIN_VAL} and ${MAX_VAL}.` };
+        }
+        return { isValid: true, error: null, m, q };
+    }
+    
+    function showMessage(message, isError = false) {
+        messageBox.textContent = message;
+        messageBox.className = `text-center my-4 min-h-[24px] ${isError ? 'text-red-600' : 'text-green-600'}`;
+    }
+
+    function runSimulation() {
+        const validation = validateInputs();
+        if (!validation.isValid) {
+            showMessage(validation.error, true);
+            resultsDiv.classList.add('hidden');
+            return;
+        }
+        
+        showMessage("Simulation complete.", false);
+        resultsDiv.classList.remove('hidden');
+        stepsTableBody.innerHTML = ''; 
+
+        const { m, q } = validation;
+        let A = '0'.repeat(BITS);
+        let Q = toTwosComplement(q, BITS);
+        const M = toTwosComplement(m, BITS);
+        const negM = toTwosComplement(-m, BITS);
+        const multiplicandSignBit = M[0];
+
+        stepsTableBody.innerHTML = `
+            <tr class="bg-gray-50 border-b">
+                <td class="px-4 py-3 font-medium text-gray-900 text-center">0</td>
+                <td class="px-6 py-3 font-semibold">Initial Values</td>
+                <td class="px-6 py-3 table-cell-mono">${withTooltip(A)}</td>
+                <td class="px-6 py-3 table-cell-mono">${formatQ(Q)}</td>
+            </tr>`;
+
+        for (let i = 1; i <= BITS; i++) {
+            const lsbQ = Q[BITS - 1];
+            let opRow = '';
+            let actionDescription = '';
+            let tempA = A; // Store A before potential operation
+
+            if (lsbQ === '1') {
+                if (i === BITS) {
+                    actionDescription = `Subtract M (Q₀=1, is sign bit)`;
+                    tempA = addBinary(A, negM);
+                } else {
+                    actionDescription = `Add M (Q₀ = 1)`;
+                    tempA = addBinary(A, M);
+                }
+                opRow = `
+                    <tr class="border-b">
+                        <td class="px-4 py-3 font-medium text-gray-900 text-center" rowspan="2">${i}</td>
+                        <td class="px-6 py-3 ${i === BITS ? 'text-[#182B49] font-semibold' : 'text-[#00629B]'}">${actionDescription}</td>
+                        <td class="px-6 py-3 table-cell-mono font-semibold">${withTooltip(tempA)}</td>
+                        <td class="px-6 py-3 table-cell-mono">${formatQ(Q)}</td>
+                    </tr>`;
+            }
+
+            const shiftDescription = (i === BITS) ? "Arithmetic Right Shift" : "Right Shift";
+            const shifted = (i === BITS)
+                ? arithmeticRightShift(tempA, Q)
+                : customRightShift(tempA, Q, multiplicandSignBit);
+            
+            A = shifted.a;
+            Q = shifted.q;
+            
+            let shiftRowContent = `<td class="px-6 py-3 table-cell-mono">${withTooltip(A)}</td><td class="px-6 py-3 table-cell-mono">${formatQ(Q)}</td>`;
+            
+            if (opRow) {
+                stepsTableBody.innerHTML += opRow + `<tr class="bg-gray-50 border-b"><td class="px-6 py-3 text-gray-600">${shiftDescription}</td>${shiftRowContent}</tr>`;
+            } else {
+                let actionDescription = `${shiftDescription} (Q₀ = 0)`;
+                 if (i === BITS) actionDescription += `, is sign bit`;
+                stepsTableBody.innerHTML += `<tr class="bg-gray-50 border-b"><td class="px-4 py-3 font-medium text-gray-900 text-center">${i}</td><td class="px-6 py-3 text-gray-600">${actionDescription}</td>${shiftRowContent}</tr>`;
+            }
+        }
+
+        const finalBinary = A + Q;
+        const decimalResult = twosComplementToDecimal(finalBinary, BITS * 2);
+        finalBinarySpan.innerHTML = `${withTooltip(A)} ${withTooltip(Q)}`;
+        finalHexSpan.textContent = decimalToHexResult(decimalResult);
+        finalDecimalSpan.textContent = decimalResult.toString();
+
+        // --- Verification Logic ---
+        const expectedResult = BigInt(m) * BigInt(q);
+        if (BigInt(decimalResult) === expectedResult) {
+            verificationBox.innerHTML = `
+                <div class="p-3 bg-green-100 border-l-4 border-green-500 text-green-700">
+                    <p class="font-bold">✅ Verified Correct</p>
+                </div>`;
+        } else {
+            verificationBox.innerHTML = `
+                <div class="p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
+                    <p class="font-bold">⚠️ Unverified Result</p>
+                    <p class="text-sm mt-2">The algorithm's result (${decimalResult}) does not match the expected result (${expectedResult}).</p>
+                    <p class="text-xs mt-2"><b>Possible Reason:</b> Even with the custom shift rule, Robertson's algorithm can fail due to accumulator overflow, especially when multiplying two negative numbers. The addition/subtraction step may produce a value that cannot be correctly represented within ${BITS} bits, leading to an error. More robust algorithms like Booth's were designed to handle these cases.</p>
+                </div>`;
+        }
+    }
+    
+    function updateBitSize(newSize) {
+        BITS = newSize;
+        MAX_VAL = Math.pow(2, BITS - 1) - 1;
+        MIN_VAL = -Math.pow(2, BITS - 1);
+        headerTitle.textContent = `Robertson's ${BITS}-Bit Multiplication`;
+        resultsDiv.classList.add('hidden');
+        messageBox.textContent = `Switched to ${BITS}-bit mode. Enter new values.`;
+        messageBox.className = 'text-center my-4 min-h-[24px] text-gray-600';
+    }
+    
+    document.querySelectorAll('input[name="bit-toggle"]').forEach(radio => {
+        radio.addEventListener('change', (e) => updateBitSize(parseInt(e.target.value, 10)));
+    });
+
+    simulateBtn.addEventListener('click', runSimulation);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        runSimulation();
+        ['M', 'Q'].forEach(id => {
+            const input = document.getElementById(id === 'M' ? 'multiplicand' : 'multiplier');
+            const radioGroupName = `base${id}`;
+            input.dataset.currentBase = 'dec';
+            document.querySelectorAll(`input[name="${radioGroupName}"]`).forEach(radio => {
+                radio.addEventListener('change', (event) => {
+                    const newBase = event.target.value;
+                    const oldBase = input.dataset.currentBase;
+                    if (newBase === oldBase) return;
+
+                    const decimalValue = parseNumber(input.value, oldBase);
+                    if (!isNaN(decimalValue) && decimalValue >= MIN_VAL && decimalValue <= MAX_VAL) {
+                        switch (newBase) {
+                            case 'dec': input.value = decimalValue.toString(); break;
+                            case 'bin': input.value = toTwosComplement(decimalValue, BITS); break;
+                            case 'hex': input.value = decimalToHex(decimalValue); break;
+                        }
+                        showMessage("");
+                    } else {
+                        document.querySelector(`input[name="${radioGroupName}"][value="${oldBase}"]`).checked = true;
+                        showMessage("Cannot convert: current value is invalid.", true);
+                        return;
+                    }
+                    input.dataset.currentBase = newBase;
+                });
+            });
+        });
+    });
+
+</script>
+</body>
+</html>
+
+
+
+
