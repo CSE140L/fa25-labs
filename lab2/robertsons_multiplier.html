@@ -148,6 +148,17 @@
 
         <div id="results" class="hidden">
             <h2 class="text-2xl font-semibold text-center mb-4 text-[#182B49]">Simulation Steps</h2>
+            <div class="flex justify-center items-center mb-4">
+                <span class="text-sm font-medium text-gray-700 mr-4">Table Display Format:</span>
+                <div class="toggle-group">
+                    <input type="radio" name="display-format" value="bin" id="display-bin" class="hidden" checked>
+                    <label for="display-bin">Binary</label>
+                    <input type="radio" name="display-format" value="hex" id="display-hex" class="hidden">
+                    <label for="display-hex">Hex</label>
+                    <input type="radio" name="display-format" value="dec" id="display-dec" class="hidden">
+                    <label for="display-dec">Decimal</label>
+                </div>
+            </div>
             <div class="table-container border border-gray-200 rounded-lg shadow-sm">
                 <table class="w-full text-sm text-left text-gray-600">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
@@ -190,6 +201,7 @@
     let BITS = 4;
     let MAX_VAL = 7;
     let MIN_VAL = -8;
+    let simulationSteps = [];
 
     function toTwosComplement(n, bits) {
         if (n >= 0) return n.toString(2).padStart(bits, '0');
@@ -214,19 +226,50 @@
         return twosComp.toString(16).toUpperCase().padStart(resultBits / 4, '0');
     }
 
+    function formatForTable(binaryString, format = 'bin') {
+        if (binaryString === null || binaryString === undefined) return '';
+        const numBits = binaryString.length;
+        if (numBits === 0) return '';
+        const decimalValue = twosComplementToDecimal(binaryString, numBits);
+        const hexValue = BigInt.asUintN(numBits, BigInt('0b' + binaryString)).toString(16).toUpperCase().padStart(Math.ceil(numBits / 4), '0');
+
+        switch (format) {
+            case 'hex':
+                return `<span title="Decimal: ${decimalValue}, Binary: ${binaryString}">${hexValue}</span>`;
+            case 'dec':
+                return `<span title="Binary: ${binaryString}, Hex: ${hexValue}">${decimalValue}</span>`;
+            case 'bin':
+            default:
+                return `<span title="Decimal: ${decimalValue}, Hex: ${hexValue}">${binaryString}</span>`;
+        }
+    }
+
+    function formatQForTable(qString, format = 'bin') {
+        if (qString === null || qString === undefined) return '';
+        const numBits = qString.length;
+        if (numBits === 0) return '';
+        const decimalValue = twosComplementToDecimal(qString, numBits);
+        const hexValue = BigInt.asUintN(numBits, BigInt('0b' + qString)).toString(16).toUpperCase().padStart(Math.ceil(numBits / 4), '0');
+
+        switch (format) {
+            case 'hex':
+                return `<span title="Decimal: ${decimalValue}, Binary: ${qString}">${hexValue}</span>`;
+            case 'dec':
+                return `<span title="Binary: ${qString}, Hex: ${hexValue}">${decimalValue}</span>`;
+            case 'bin':
+            default:
+                if (qString.length > 0) {
+                    const msbs = qString.slice(0, -1);
+                    const lsb = qString.slice(-1);
+                    return `<span title="Decimal: ${decimalValue}, Hex: ${hexValue}">${msbs}<span class="font-bold text-[#00629B] underline">${lsb}</span></span>`;
+                }
+                return `<span title="Decimal: ${decimalValue}, Hex: ${hexValue}">${qString}</span>`;
+        }
+    }
+    
     function withTooltip(binaryString) {
         const decimalValue = twosComplementToDecimal(binaryString, binaryString.length);
         return `<span title="Decimal: ${decimalValue}">${binaryString}</span>`;
-    }
-
-    function formatQ(qString) {
-        const decimalValue = twosComplementToDecimal(qString, qString.length);
-        if (qString.length > 0) {
-            const msbs = qString.slice(0, -1);
-            const lsb = qString.slice(-1);
-            return `<span title="Decimal: ${decimalValue}">${msbs}<span class="font-bold text-[#00629B] underline">${lsb}</span></span>`;
-        }
-        return `<span title="Decimal: ${decimalValue}">${qString}</span>`;
     }
 
     function addBinary(bin1, bin2) {
@@ -289,6 +332,38 @@
         messageBox.className = `text-center my-4 min-h-[24px] ${isError ? 'text-red-600' : 'text-green-600'}`;
     }
 
+    function renderTable() {
+        const displayFormat = document.querySelector('input[name="display-format"]:checked').value;
+        stepsTableBody.innerHTML = '';
+
+        simulationSteps.forEach(s => {
+            if (s.isInitial) {
+                stepsTableBody.innerHTML += `
+                    <tr class="bg-gray-50 border-b">
+                        <td class="px-4 py-3 font-medium text-gray-900 text-center">${s.step}</td>
+                        <td class="px-6 py-3 font-semibold">${s.action}</td>
+                        <td class="px-6 py-3 table-cell-mono">${formatForTable(s.A, displayFormat)}</td>
+                        <td class="px-6 py-3 table-cell-mono">${formatQForTable(s.Q, displayFormat)}</td>
+                    </tr>`;
+                return;
+            }
+
+            if (s.op) {
+                const opRow = `
+                    <tr class="border-b">
+                        <td class="px-4 py-3 font-medium text-gray-900 text-center" rowspan="2">${s.step}</td>
+                        <td class="px-6 py-3 ${s.step === BITS ? 'text-[#182B49] font-semibold' : 'text-[#00629B]'}">${s.op.action}</td>
+                        <td class="px-6 py-3 table-cell-mono font-semibold">${formatForTable(s.op.A, displayFormat)}</td>
+                        <td class="px-6 py-3 table-cell-mono">${formatQForTable(s.op.Q, displayFormat)}</td>
+                    </tr>`;
+                const shiftRow = `<tr class="bg-gray-50 border-b"><td class="px-6 py-3 text-gray-600">${s.shift.action}</td><td class="px-6 py-3 table-cell-mono">${formatForTable(s.shift.A, displayFormat)}</td><td class="px-6 py-3 table-cell-mono">${formatQForTable(s.shift.Q, displayFormat)}</td></tr>`;
+                stepsTableBody.innerHTML += opRow + shiftRow;
+            } else {
+                stepsTableBody.innerHTML += `<tr class="bg-gray-50 border-b"><td class="px-4 py-3 font-medium text-gray-900 text-center">${s.step}</td><td class="px-6 py-3 text-gray-600">${s.shift.action}</td><td class="px-6 py-3 table-cell-mono">${formatForTable(s.shift.A, displayFormat)}</td><td class="px-6 py-3 table-cell-mono">${formatQForTable(s.shift.Q, displayFormat)}</td></tr>`;
+            }
+        });
+    }
+
     function runSimulation() {
         const validation = validateInputs();
         if (!validation.isValid) {
@@ -299,7 +374,8 @@
         
         showMessage("Simulation complete.", false);
         resultsDiv.classList.remove('hidden');
-        stepsTableBody.innerHTML = ''; 
+        
+        simulationSteps = []; // Clear previous steps
 
         const { m, q } = validation;
         let A = '0'.repeat(BITS);
@@ -308,35 +384,29 @@
         const negM = toTwosComplement(-m, BITS);
         const multiplicandSignBit = M[0];
 
-        stepsTableBody.innerHTML = `
-            <tr class="bg-gray-50 border-b">
-                <td class="px-4 py-3 font-medium text-gray-900 text-center">0</td>
-                <td class="px-6 py-3 font-semibold">Initial Values</td>
-                <td class="px-6 py-3 table-cell-mono">${withTooltip(A)}</td>
-                <td class="px-6 py-3 table-cell-mono">${formatQ(Q)}</td>
-            </tr>`;
+        simulationSteps.push({
+            step: 0,
+            isInitial: true,
+            action: 'Initial Values',
+            A: A,
+            Q: Q
+        });
 
         for (let i = 1; i <= BITS; i++) {
             const lsbQ = Q[BITS - 1];
-            let opRow = '';
-            let actionDescription = '';
-            let tempA = A; // Store A before potential operation
+            let opAction = null;
+            let opA = null;
+            let tempA = A;
 
             if (lsbQ === '1') {
                 if (i === BITS) {
-                    actionDescription = `Subtract M (Q₀=1, is sign bit)`;
+                    opAction = `Subtract M (Q₀=1, is sign bit)`;
                     tempA = addBinary(A, negM);
                 } else {
-                    actionDescription = `Add M (Q₀ = 1)`;
+                    opAction = `Add M (Q₀ = 1)`;
                     tempA = addBinary(A, M);
                 }
-                opRow = `
-                    <tr class="border-b">
-                        <td class="px-4 py-3 font-medium text-gray-900 text-center" rowspan="2">${i}</td>
-                        <td class="px-6 py-3 ${i === BITS ? 'text-[#182B49] font-semibold' : 'text-[#00629B]'}">${actionDescription}</td>
-                        <td class="px-6 py-3 table-cell-mono font-semibold">${withTooltip(tempA)}</td>
-                        <td class="px-6 py-3 table-cell-mono">${formatQ(Q)}</td>
-                    </tr>`;
+                opA = tempA;
             }
 
             const shiftDescription = (i === BITS) ? "Arithmetic Right Shift" : "Right Shift";
@@ -344,19 +414,23 @@
                 ? arithmeticRightShift(tempA, Q)
                 : customRightShift(tempA, Q, multiplicandSignBit);
             
+            let shiftAction = shiftDescription;
+            if (!opAction) {
+                shiftAction = `${shiftDescription} (Q₀ = 0)`;
+                 if (i === BITS) shiftAction += `, is sign bit`;
+            }
+            
+            simulationSteps.push({
+                step: i,
+                op: opAction ? { action: opAction, A: opA, Q: Q } : null,
+                shift: { action: shiftAction, A: shifted.a, Q: shifted.q }
+            });
+
             A = shifted.a;
             Q = shifted.q;
-            
-            let shiftRowContent = `<td class="px-6 py-3 table-cell-mono">${withTooltip(A)}</td><td class="px-6 py-3 table-cell-mono">${formatQ(Q)}</td>`;
-            
-            if (opRow) {
-                stepsTableBody.innerHTML += opRow + `<tr class="bg-gray-50 border-b"><td class="px-6 py-3 text-gray-600">${shiftDescription}</td>${shiftRowContent}</tr>`;
-            } else {
-                let actionDescription = `${shiftDescription} (Q₀ = 0)`;
-                 if (i === BITS) actionDescription += `, is sign bit`;
-                stepsTableBody.innerHTML += `<tr class="bg-gray-50 border-b"><td class="px-4 py-3 font-medium text-gray-900 text-center">${i}</td><td class="px-6 py-3 text-gray-600">${actionDescription}</td>${shiftRowContent}</tr>`;
-            }
         }
+
+        renderTable();
 
         const finalBinary = A + Q;
         const decimalResult = twosComplementToDecimal(finalBinary, BITS * 2);
@@ -387,6 +461,7 @@
         MIN_VAL = -Math.pow(2, BITS - 1);
         headerTitle.textContent = `Robertson's ${BITS}-Bit Multiplication`;
         resultsDiv.classList.add('hidden');
+        simulationSteps = [];
         messageBox.textContent = `Switched to ${BITS}-bit mode. Enter new values.`;
         messageBox.className = 'text-center my-4 min-h-[24px] text-gray-600';
     }
@@ -396,6 +471,14 @@
     });
 
     simulateBtn.addEventListener('click', runSimulation);
+
+    document.querySelectorAll('input[name="display-format"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (simulationSteps.length > 0) {
+                renderTable();
+            }
+        });
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         runSimulation();
