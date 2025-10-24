@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<circuit>
+  <version>2</version>
+  <attributes>
+    <entry>
+      <string>backgroundColor</string>
+      <awt-color>
+        <red>153</red>
+        <green>153</green>
+        <blue>255</blue>
+        <alpha>255</alpha>
+      </awt-color>
+    </entry>
+    <entry>
+      <string>isGeneric</string>
+      <boolean>true</boolean>
+    </entry>
+    <entry>
+      <string>Label</string>
+      <string>ANDD</string>
+    </entry>
+    <entry>
+      <string>romContent</string>
+      <romList>
+        <roms/>
+      </romList>
+    </entry>
+  </attributes>
+  <visualElements>
+    <visualElement>
+      <elementName>And</elementName>
+      <elementAttributes>
+        <entry>
+          <string>wideShape</string>
+          <boolean>true</boolean>
+        </entry>
+        <entry>
+          <string>Inputs</string>
+          <int>9</int>
+        </entry>
+      </elementAttributes>
+      <pos x="20" y="0"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Delay</elementName>
+      <elementAttributes>
+        <entry>
+          <string>generic</string>
+          <string>initD := 2;
+riseD := 1;
+this.delayTime = initD + (riseD * args.inputCount);</string>
+        </entry>
+      </elementAttributes>
+      <pos x="140" y="80"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Splitter</elementName>
+      <elementAttributes>
+        <entry>
+          <string>mirror</string>
+          <boolean>true</boolean>
+        </entry>
+        <entry>
+          <string>Input Splitting</string>
+          <string>5</string>
+        </entry>
+        <entry>
+          <string>Output Splitting</string>
+          <string>1*5</string>
+        </entry>
+        <entry>
+          <string>generic</string>
+          <string>this.&apos;Input Splitting&apos;=&quot;&quot; + (9-args.inputCount);
+this.&apos;Output Splitting&apos;=&quot;1*&quot; + (9-args.inputCount);</string>
+        </entry>
+      </elementAttributes>
+      <pos x="-20" y="160"/>
+    </visualElement>
+    <visualElement>
+      <elementName>VDD</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Bits</string>
+          <int>5</int>
+        </entry>
+        <entry>
+          <string>generic</string>
+          <string>this.Bits = (9 -args.inputCount);</string>
+        </entry>
+      </elementAttributes>
+      <pos x="-40" y="140"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>Q</string>
+        </entry>
+      </elementAttributes>
+      <pos x="220" y="80"/>
+    </visualElement>
+    <visualElement>
+      <elementName>GenericInitCode</elementName>
+      <elementAttributes>
+        <entry>
+          <string>generic</string>
+          <string>inputCount := 1;</string>
+        </entry>
+      </elementAttributes>
+      <pos x="100" y="-20"/>
+    </visualElement>
+    <visualElement>
+      <elementName>GenericCode</elementName>
+      <elementAttributes>
+        <entry>
+          <string>generic</string>
+          <string>for (i:=0; i &lt;args.inputCount; i++) {
+ inp:=addComponent(&quot;In&quot;,0,i);
+ inp.Label=&quot;D&quot; + i;
+}</string>
+        </entry>
+      </elementAttributes>
+      <pos x="320" y="40"/>
+    </visualElement>
+  </visualElements>
+  <wires>
+    <wire>
+      <p1 x="100" y="80"/>
+      <p2 x="140" y="80"/>
+    </wire>
+    <wire>
+      <p1 x="0" y="80"/>
+      <p2 x="20" y="80"/>
+    </wire>
+    <wire>
+      <p1 x="180" y="80"/>
+      <p2 x="220" y="80"/>
+    </wire>
+    <wire>
+      <p1 x="0" y="160"/>
+      <p2 x="20" y="160"/>
+    </wire>
+    <wire>
+      <p1 x="-40" y="160"/>
+      <p2 x="-20" y="160"/>
+    </wire>
+    <wire>
+      <p1 x="0" y="0"/>
+      <p2 x="20" y="0"/>
+    </wire>
+    <wire>
+      <p1 x="0" y="100"/>
+      <p2 x="20" y="100"/>
+    </wire>
+    <wire>
+      <p1 x="0" y="20"/>
+      <p2 x="20" y="20"/>
+    </wire>
+    <wire>
+      <p1 x="0" y="120"/>
+      <p2 x="20" y="120"/>
+    </wire>
+    <wire>
+      <p1 x="0" y="40"/>
+      <p2 x="20" y="40"/>
+    </wire>
+    <wire>
+      <p1 x="0" y="140"/>
+      <p2 x="20" y="140"/>
+    </wire>
+    <wire>
+      <p1 x="0" y="60"/>
+      <p2 x="20" y="60"/>
+    </wire>
+    <wire>
+      <p1 x="-40" y="140"/>
+      <p2 x="-40" y="160"/>
+    </wire>
+  </wires>
+  <measurementOrdering/>
+</circuit>
