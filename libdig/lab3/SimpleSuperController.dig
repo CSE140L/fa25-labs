@@ -35,6 +35,10 @@
           <string>Label</string>
           <string>CLK</string>
         </entry>
+        <entry>
+          <string>Frequency</string>
+          <int>5</int>
+        </entry>
       </elementAttributes>
       <pos x="600" y="440"/>
     </visualElement>

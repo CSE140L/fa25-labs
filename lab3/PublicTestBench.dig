@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<circuit>
+  <version>2</version>
+  <attributes/>
+  <visualElements>
+    <visualElement>
+      <elementName>Testcase</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>Error Corrector</string>
+        </entry>
+        <entry>
+          <string>Testdata</string>
+          <testData>
+            <dataString>	    CLK  BEGIN  CODEWORD            CORRECTED           ERROR  VALUE
+
+# 0b0000110111110000 =&gt; +8  # ERROR
+	    C    1      0b0000110111110000  X                   X      X
+repeat(70)  C    0      0b0000110111110000  X                   X      X
+	    C    0      0b0000110111110000  0b0000111111110000  1      X
+
+# 0b1011001001001101 =&gt; -3
+	    C    1      0b1011001001001101  X                   X      X
+repeat(70)  C    0      0b1011001001001101  X                   X      X
+	    C    0      0b1011001001001101  0b1011001001001101  0      0b111101
+
+# 0b0110100110010110 =&gt; -0
+	    C    1      0b0110100110010110  X                   X      X
+repeat(70)  C    0      0b0110100110010110  X                   X      X
+	    C    0      0b0110100110010110  0b0110100110010110  0      0b000000</dataString>
+          </testData>
+        </entry>
+      </elementAttributes>
+      <pos x="880" y="420"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Text</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Description</string>
+          <string>Copy over the &quot;Test&quot; element into your desing to run tests.
+Note that some parts fo the lab are expected to fail certain test cases.</string>
+        </entry>
+      </elementAttributes>
+      <pos x="460" y="320"/>
+    </visualElement>
+  </visualElements>
+  <wires/>
+  <measurementOrdering/>
+</circuit>
