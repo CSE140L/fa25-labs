@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vending Machine</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.green.min.css" />
+  
+  <!-- Add the colors stylesheet -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css"
+  >
+  
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <style>
+    /* A little custom styling for layout */
+    body {
+      padding: 0;
+      margin: 0;
+      background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('potato_mat.png');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 250px 250px; 
+      height: 100vh;
+      gap: var(--pico-spacing);
+      padding: var(--pico-spacing);
+      box-sizing: border-box; /* Include padding in height */
+    }
+
+    aside, main {
+      padding: var(--pico-spacing);
+      background-color: var(--pico-card-background-color);
+      border-radius: var(--pico-border-radius);
+      height: calc(100vh - (var(--pico-spacing) * 2)); /* Full height minus padding */
+      display: flex;
+      flex-direction: column;
+    }
+    
+    aside .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--pico-spacing);
+    }
+    
+    #message-log-styled {
+      flex-grow: 1; /* Make the log fill the space */
+      font-family: monospace;
+      font-size: 0.9em;
+      background-color: var(--pico-form-element-background-color);
+      border: var(--pico-form-element-border-width) solid var(--pico-form-element-border-color);
+      border-radius: var(--pico-border-radius);
+      padding: var(--pico-spacing);
+      overflow-y: auto; /* Add scrollbar if content overflows */
+    }
+
+    #message-log-styled p {
+      margin: 0 0 0.5rem;
+    }
+    
+    .log-count {
+      color: var(--pico-color-neutral-400); /* A slightly lighter gray */
+      margin-right: 0.5em;
+    }
+    .log-added {
+      color: var(--pico-color-green-500); /* Green */
+    }
+    .log-balance {
+      color: var(--pico-primary); /* Blue */
+    }
+    .log-refunded {
+      color: var(--pico-color-red-500); /* Red */
+    }
+    .log-vended {
+      color: var(--pico-color-yellow-500); /* Yellow */
+    }
+    .log-badge-user {
+      color: var(--pico-color-cyan-500);
+      margin-right: 0.5em;
+      font-weight: bold;
+    }
+    .log-badge-vending {
+      color: var(--pico-color-orange-500);
+      margin-right: 0.5em;
+      font-weight: bold;
+    }
+
+    .status-display h2 {
+      margin-bottom: 0.5rem;
+    }
+    
+    .status-display p {
+      font-size: 1.25em;
+      margin: 0;
+    }
+
+    #transparency-toggle {
+        z-index: 100;
+    }
+
+    .transparent-mode > main,
+    .transparent-mode > aside {
+        /* Using an RGBA equivalent of default dark card background for a smooth transition */
+        transition: opacity 0.3s ease-in-out;
+        opacity: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    
+    <main>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <h1>бульбамат</h1>
+        <button onclick="openSettingsModal()" class="contrast" style="width: auto; font-size: smaller;"><i class="fas fa-cog"></i></button>
+      </div>
+      
+      <div class="grid">
+        <div class="status-display"> 
+          <strong>Currently Deposited:</strong>
+          <p id="progress-deposited" style="color: var(--pico-primary);">$0.00</p>
+        </div>
+        <div class="status-display">
+          <strong>Potato Price:</strong>
+          <p id="potato-price">$0.00</p>
+        </div>
+      </div>
+      
+      <progress id="purchase-progress" value="0" max="7" style="margin-top: 0.5rem;"></progress>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Message Log</h4>
+      <div id="message-log-styled">
+        <p><span class="log-badge-vending">&lt;V&gt;</span><span class="log-count" data-tooltip="Machine initialized" data-placement="right">(Tr. #0)</span> Machine ready...</p>
+      </div>
+
+      <hr style="margin-top: 2rem;">
+      <h4>User Controls</h4>
+      <div class="grid">
+        <button id="add-1" onclick="addMoney(1, [{bill: 1, count: 1}])">Add $1</button>
+        <button id="add-2" onclick="addMoney(2, [{bill: 2, count: 1}])">Add $2</button>
+        <button id="add-5" onclick="addMoney(5, [{bill: 5, count: 1}])">Add $5</button>
+        <button id="refund" class="secondary" onclick="requestRefund()">Refund</button>
+      </div>
+
+      <h4 style="margin-top: 1.5rem;">User Statistics</h4>
+      <div class="grid">
+        <div class="status-display">
+            <strong>Purchased:</strong>
+            <p id="potatoes-purchased">0</p>
+        </div>
+        <div class="status-display">
+            <strong>Transactions:</strong>
+            <p id="transaction-count">0</p>
+        </div>
+        <div class="status-display">
+            <strong>Total Deposited:</strong>
+            <p id="total-deposited">$0.00</p>
+        </div>
+        <div class="status-display">
+            <strong>Total Refunded:</strong>
+            <p id="total-refunded">$0.00</p>
+        </div>
+      </div>
+    </main>
+
+    <aside>
+      <h4>Vending Machine Controls</h4>
+      <div class="status-display">
+        <strong>Potatoes Left:</strong>
+        <p id="potato-stock-display">15/15</p>
+      </div>
+
+      <hr>
+      <h4>Machine Bill Stock</h4>
+      <div class="grid">
+          <div class="status-display">
+            <strong>$1 Bills:</strong>
+            <p id="bill-1-stock">15/31</p>
+          </div>
+          <div class="status-display">
+            <strong>$2 Bills:</strong>
+            <p id="bill-2-stock">15/31</p>
+          </div>
+          <div class="status-display">
+            <strong>$5 Bills:</strong>
+            <p id="bill-5-stock">15/31</p>
+          </div>
+      </div>
+      <button id="withdraw-money" onclick="withdrawMoney()" class="secondary" style="margin-top: 1rem;">Withdraw Funds</button>
+      
+      <hr>
+      
+      <label style="margin-top: 1em;">
+        <input type="checkbox" id="auto-refund-check" checked disabled> Auto-refund
+      </label>
+      <div class="status-display">
+        <strong>Total Withdrawn:</strong>
+        <p id="total-withdrawn">$0.00</p>
+      </div>
+    </aside>
+
+    <aside>
+      <h4>Manual Stock Control</h4>
+      
+      <label for="stock-potatoes" style="margin-top: 1rem;">Potatoes</label>
+      <input type="number" id="stock-potatoes" placeholder="Set Potato Stock">
+      
+      <label for="stock-bill-1" style="margin-top: 1rem;">$1 Bills</label>
+      <input type="number" id="stock-bill-1" placeholder="Set $1 Stock">
+
+      <label for="stock-bill-2" style="margin-top: 1rem;">$2 Bills</label>
+      <input type="number" id="stock-bill-2" placeholder="Set $2 Stock">
+
+      <label for="stock-bill-5" style="margin-top: 1rem;">$5 Bills</label>
+      <input type="number" id="stock-bill-5" placeholder="Set $5 Stock">
+
+      <button onclick="applyStockSettings()" style="margin-top: 1rem;">Set Stocks</button>
+    </aside>
+    
+  </div>
+
+  <script>
+    // === STATE VARIABLES ===
+    let currentBalance = 0;
+    let potatoesPurchased = 0;
+    let totalDeposited = 0;
+    let totalRefunded = 0;
+    let totalWithdrawn = 0;
+    let transactionCount = 0;
+    let clockCycle = 0;
+    
+    let potatoPrice = 4;
+    const maxBalance = 12;
+    let maxPotatoes = 15;
+    let potatoesAvailable = 15;
+
+    // NEW: Bill tracking
+    let billSettings = {
+      1: { max: 31, default: 15 },
+      2: { max: 31, default: 15 },
+      5: { max: 31, default: 15 },
+    };
+    let bills = {
+      1: billSettings[1].default,
+      2: billSettings[2].default,
+      5: billSettings[5].default,
+    };
+    
+
+    // === UI ELEMENTS ===
+    const logDisplay = document.getElementById('message-log-styled');
+
+    // === NEW UI ELEMENTS ===
+    const autoRefundCheck = document.getElementById('auto-refund-check');
+    const priceDisplay = document.getElementById('potato-price');
+    const amountNeededDisplay = document.getElementById('progress-deposited');
+    const progressDisplay = document.getElementById('purchase-progress');
+    const stockDisplay = document.getElementById('potato-stock-display');
+    const bill1StockDisplay = document.getElementById('bill-1-stock');
+    const bill2StockDisplay = document.getElementById('bill-2-stock');
+    const bill5StockDisplay = document.getElementById('bill-5-stock');
+    const potatoesPurchasedDisplay = document.getElementById('potatoes-purchased');
+    const transactionCountDisplay = document.getElementById('transaction-count');
+    const totalDepositedDisplay = document.getElementById('total-deposited');
+    const totalRefundedDisplay = document.getElementById('total-refunded');
+    const totalWithdrawnDisplay = document.getElementById('total-withdrawn');
+
+    // === HELPER FUNCTIONS ===
+
+    /** Gets a formatted timestamp string */
+    function getTimestamp() {
+      const now = new Date();
+      return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    
+    /** Formats a number as USD currency */
+    function formatCurrency(amount) {
+      return `$${amount.toFixed(2)}`;
+    }
+
+    /** Builds the cycle string for log messages */
+    function buildCycleString(startCycle, count) {
+      if (count <= 0) return `(cycle ${startCycle})`;
+      if (count === 1) return `(cycle ${startCycle + 1})`;
+      return `(cycles ${startCycle + 1}-${startCycle + count})`;
+    }
+
+    /** Logs a message to the main screen */
+    function logMessage(message, source, cycleString = '') {
+      const timestamp = getTimestamp();
+      const logEntry = document.createElement('p');
+      const badge = source === 'user' 
+        ? '<span class="log-badge-user">&lt;U&gt;</span>' 
+        : '<span class="log-badge-vending">&lt;V&gt;</span>';
+      logEntry.innerHTML = `${badge}<span class="log-count" data-tooltip="${timestamp}" data-placement="right">(Tr. #${transactionCount})</span> ${message} ${cycleString}`;
+      logDisplay.prepend(logEntry);
+    }
+    
+    /**
+     * Checks if a given amount can be refunded with the available bills.
+     * @param {number} amount The amount to refund.
+     * @returns {boolean} True if the refund is possible, false otherwise.
+     */
+    function canRefund(amount) {
+      let remaining = amount;
+      let tempBills = {...bills};
+      const denominations = Object.keys(tempBills).map(Number).sort((a, b) => b - a);
+
+      for (const denom of denominations) {
+        const numBillsToUse = Math.min(Math.floor(remaining / denom), tempBills[denom]);
+        remaining -= numBillsToUse * denom;
+      }
+      return remaining < 0.001; // Use a small epsilon for floating point
+    }
+
+    /**
+     * Calculates the bills for a refund and updates the bill counts.
+     * @param {number} amount The amount to refund.
+     * @returns {{success: boolean, breakdown: object, billCount: number}} An object indicating success, an object describing the bills, and the number of bills.
+     */
+    function makeRefund(amount) {
+      let remaining = amount;
+      let refundBreakdown = {};
+      let tempBills = {...bills};
+      const denominations = Object.keys(tempBills).map(Number).sort((a, b) => b - a);
+
+      for (const denom of denominations) {
+        if (remaining > 0) {
+            const numBillsToUse = Math.min(Math.floor(remaining / denom), tempBills[denom]);
+            if (numBillsToUse > 0) {
+                refundBreakdown[denom] = numBillsToUse;
+                tempBills[denom] -= numBillsToUse;
+                remaining -= numBillsToUse * denom;
+            }
+        }
+      }
+
+      if (remaining < 0.001) { // Use a small epsilon for floating point
+        bills = tempBills;
+        
+        const billCount = Object.values(refundBreakdown).reduce((sum, count) => sum + count, 0);
+
+        return { success: true, breakdown: refundBreakdown, billCount: billCount };
+      } else {
+        return { success: false }; 
+      }
+    }
+
+    /**
+     * Checks if a deposit is possible.
+     * @param {number} amount The amount to add.
+     * @param {Array} billsDeposited The bills being deposited.
+     * @returns {boolean} True if the deposit is possible.
+     */
+    function canAddMoney(amount, billsDeposited = []) {
+      // Check if bill counters are full
+      for (const deposit of billsDeposited) {
+        if ((bills[deposit.bill] || 0) + deposit.count > billSettings[deposit.bill].max) {
+          return false;
+        }
+      }
+      
+      const newPotentialBalance = currentBalance + amount;
+
+      // User request: disable buttons that could lead to 2 vends if only 1 potato left.
+      if (potatoesAvailable === 1 && newPotentialBalance >= potatoPrice * 2) {
+          return false;
+      }
+
+      // Check for refund possibility
+      if (newPotentialBalance >= potatoPrice && potatoesAvailable > 0) {
+        const numToVend = Math.min(Math.floor(newPotentialBalance / potatoPrice), potatoesAvailable);
+        const change = newPotentialBalance - (numToVend * potatoPrice);
+        if (change > 0 && autoRefundCheck.checked && !canRefund(change)) {
+          return false;
+        }
+      } else if (newPotentialBalance > maxBalance) {
+        const excess = newPotentialBalance - maxBalance;
+        if (!canRefund(excess)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+    
+    /** Updates all the UI displays with current state values */
+    function updateDisplays() {
+      // Update purchase progress section
+      priceDisplay.textContent = formatCurrency(potatoPrice);
+      amountNeededDisplay.textContent = formatCurrency(currentBalance);
+      progressDisplay.value = currentBalance;
+      progressDisplay.max = potatoPrice;
+      stockDisplay.textContent = `${potatoesAvailable}/${maxPotatoes}`;
+      
+      // NEW: Update bill stock display
+      bill1StockDisplay.textContent = `${bills[1]}/${billSettings[1].max}`;
+      bill2StockDisplay.textContent = `${bills[2]}/${billSettings[2].max}`;
+      bill5StockDisplay.textContent = `${bills[5]}/${billSettings[5].max}`;
+
+      // NEW: Update user statistics
+      potatoesPurchasedDisplay.textContent = potatoesPurchased;
+      transactionCountDisplay.textContent = transactionCount;
+      totalDepositedDisplay.textContent = formatCurrency(totalDeposited);
+      totalRefundedDisplay.textContent = formatCurrency(totalRefunded);
+      totalWithdrawnDisplay.textContent = formatCurrency(totalWithdrawn);
+
+      // --- Update Button States ---
+      const machineEmpty = potatoesAvailable === 0;
+      const add1Button = document.getElementById('add-1');
+      const add2Button = document.getElementById('add-2');
+      const add5Button = document.getElementById('add-5');
+      const refundButton = document.getElementById('refund');
+
+      if (machineEmpty) {
+        add1Button.disabled = true;
+        add2Button.disabled = true;
+        add5Button.disabled = true;
+        refundButton.disabled = currentBalance === 0;
+      } else {
+        add1Button.disabled = !canAddMoney(1, [{bill: 1, count: 1}]);
+        add2Button.disabled = !canAddMoney(2, [{bill: 2, count: 1}]);
+        add5Button.disabled = !canAddMoney(5, [{bill: 5, count: 1}]);
+        refundButton.disabled = currentBalance === 0;
+      }
+    }
+
+    // === CORE LOGIC ===
+
+    /** Helper to vend a single potato and update state */
+    function vendOnePotato() {
+        potatoesAvailable--;
+        potatoesPurchased++;
+        currentBalance -= potatoPrice;
+    }
+
+    /** Adds money to the machine */
+    function addMoney(amount, billsDeposited = []) {
+      // PRE-TRANSACTION CHECKS
+      if (!canAddMoney(amount, billsDeposited)) {
+          logMessage(
+            `<span class="log-refunded">Transaction rejected.</span>`,
+            'vending'
+          );
+          return;
+      }
+
+      // --- TRANSACTION START ---
+      transactionCount++;
+      clockCycle++; // Cycle for adding money
+      totalDeposited += amount;
+
+      // Replenish bills
+      for (const deposit of billsDeposited) {
+        if (!bills[deposit.bill]) bills[deposit.bill] = 0;
+        bills[deposit.bill] += deposit.count;
+      }
+      
+      currentBalance += amount;
+      logMessage(
+        `Added <span class="log-added">${formatCurrency(amount)}</span>. ` +
+        `Current balance: <span class="log-balance">${formatCurrency(currentBalance)}</span>.`,
+        'user',
+        `(cycle ${clockCycle})`
+      );
+      
+      const numToVend = Math.min(Math.floor(currentBalance / potatoPrice), potatoesAvailable);
+
+      if (numToVend > 0) {
+          clockCycle++; // Vending action is one cycle
+          for(let i=0; i<numToVend; i++) {
+              vendOnePotato();
+          }
+          logMessage(
+            `<span class="log-vended">Vended ${numToVend} potato${numToVend > 1 ? 's' : ''}.</span> ` +
+            `Remaining balance: <span class="log-balance">${formatCurrency(currentBalance)}</span>.`,
+            'vending',
+            `(cycle ${clockCycle})`
+          );
+      }
+
+      if (potatoesAvailable === 0 && numToVend > 0) {
+        handleEmptyMachine();
+      } else if (currentBalance >= potatoPrice && potatoesAvailable === 0) {
+        logMessage(`<span class="log-refunded">Machine is empty.</span> Cannot vend.`, 'vending', `(cycle ${clockCycle})`);
+      }
+      
+      // Refund remaining balance if a purchase was made and auto-refund is on
+      if (currentBalance > 0 && numToVend > 0 && autoRefundCheck.checked) {
+          const refundAmount = currentBalance;
+          const refundResult = makeRefund(refundAmount);
+          if (refundResult.success) {
+              totalRefunded += refundAmount;
+              currentBalance = 0;
+
+              const sortedDenominations = Object.keys(refundResult.breakdown).map(Number).sort((a, b) => b - a);
+              for (const denom of sortedDenominations) {
+                  const count = refundResult.breakdown[denom];
+                  for (let i = 0; i < count; i++) {
+                      clockCycle++;
+                      logMessage(
+                          `<span class="log-refunded">Auto-refunded $${denom}</span> (1x$${denom}).`,
+                          'vending',
+                          `(cycle ${clockCycle})`
+                      );
+                  }
+              }
+              logMessage(`Balance reset.`, 'vending', `(cycle ${clockCycle})`);
+          } else {
+             logMessage(`<span class="log-refunded">CRITICAL ERROR: Could not make change for ${formatCurrency(currentBalance)}.</span>`, 'vending', `(cycle ${clockCycle})`);
+          }
+      }
+      
+      if (currentBalance > maxBalance) {
+        autoRefundExcess();
+      }
+      
+      updateDisplays();
+    }
+
+    /** Handles logic for when the machine runs out of stock */
+    function handleEmptyMachine() {
+      clockCycle++;
+      logMessage(`<span class="log-refunded">Vending machine is empty!</span> Please refill.`, 'vending', `(cycle ${clockCycle})`);
+      
+      if (currentBalance > 0) {
+        const refundAmount = currentBalance;
+        const refundResult = makeRefund(refundAmount);
+        if (refundResult.success) {
+            totalRefunded += refundAmount;
+            currentBalance = 0;
+
+            const sortedDenominations = Object.keys(refundResult.breakdown).map(Number).sort((a, b) => b - a);
+            for (const denom of sortedDenominations) {
+                const count = refundResult.breakdown[denom];
+                for (let i = 0; i < count; i++) {
+                    clockCycle++;
+                    logMessage(
+                        `<span class="log-refunded">Auto-refunding $${denom}</span> (1x$${denom}).`,
+                        'vending',
+                        `(cycle ${clockCycle})`
+                    );
+                }
+            }
+            logMessage(`Balance reset.`, 'vending', `(cycle ${clockCycle})`);
+        } else {
+            clockCycle++;
+            logMessage(`<span class="log-refunded">CRITICAL ERROR: Could not refund ${formatCurrency(currentBalance)}.</span>`, 'vending', `(cycle ${clockCycle})`);
+        }
+      }
+      updateDisplays();
+    }
+
+    /** Automatically refunds any amount over the $12 limit */
+    function autoRefundExcess() {
+      const excess = currentBalance - maxBalance;
+      const refundResult = makeRefund(excess);
+
+      if (refundResult.success) {
+        currentBalance = maxBalance;
+        totalRefunded += excess;
+
+        const sortedDenominations = Object.keys(refundResult.breakdown).map(Number).sort((a, b) => b - a);
+        for (const denom of sortedDenominations) {
+            const count = refundResult.breakdown[denom];
+            for (let i = 0; i < count; i++) {
+                clockCycle++;
+                logMessage(
+                    `<span class="log-refunded">Auto-refunded $${denom}</span> (1x$${denom}).`,
+                    'vending',
+                    `(cycle ${clockCycle})`
+                );
+            }
+        }
+        logMessage(`Current balance: <span class="log-balance">${formatCurrency(currentBalance)}</span>.`, 'vending', `(cycle ${clockCycle})`);
+
+      } else {
+        clockCycle++;
+        logMessage(`<span class="log-refunded">CRITICAL ERROR: Could not refund excess ${formatCurrency(excess)}.</span>`, 'vending', `(cycle ${clockCycle})`);
+        // This state should have been prevented by the check in addMoney.
+      }
+    }
+    
+    /** Handles the user pressing the refund button */
+    function requestRefund() {
+      transactionCount++;
+      clockCycle++; // Cycle for the request action
+      
+      if (currentBalance === 0) {
+        logMessage("No balance to refund.", 'vending', `(cycle ${clockCycle})`);
+        return;
+      }
+      
+      if (!canRefund(currentBalance)) {
+           logMessage(`<span class="log-refunded">Cannot process refund.</span> Not enough bills for ${formatCurrency(currentBalance)}.`, 'vending', `(cycle ${clockCycle})`);
+           // This state should also be prevented by checks in addMoney.
+           return;
+      }
+
+      const refundAmount = currentBalance;
+      const refundResult = makeRefund(refundAmount);
+      if (refundResult.success) {
+        totalRefunded += refundAmount;
+        currentBalance = 0;
+
+        const sortedDenominations = Object.keys(refundResult.breakdown).map(Number).sort((a, b) => b - a);
+        for (const denom of sortedDenominations) {
+            const count = refundResult.breakdown[denom];
+            for (let i = 0; i < count; i++) {
+                clockCycle++;
+                logMessage(
+                    `<span class="log-refunded">Refunded $${denom}</span> (1x$${denom}).`,
+                    'user',
+                    `(cycle ${clockCycle})`
+                );
+            }
+        }
+        logMessage(`Balance reset.`, 'user', `(cycle ${clockCycle})`);
+
+      } else {
+         clockCycle++;
+         logMessage(`<span class="log-refunded">CRITICAL ERROR: Refund calculation failed for ${formatCurrency(refundAmount)}.</span>`, 'vending', `(cycle ${clockCycle})`);
+      }
+      updateDisplays();
+    }
+    
+
+
+    /** Withdraws excess funds from the machine */
+    function withdrawMoney() {
+      transactionCount++;
+      clockCycle++;
+      let amountBefore = 0;
+      for (const denom in bills) {
+        amountBefore += bills[denom] * denom;
+      }
+
+      const newBills = {};
+      let amountAfter = 0;
+      for (const denom in billSettings) {
+        newBills[denom] = billSettings[denom].default;
+        amountAfter += newBills[denom] * denom;
+      }
+
+      const withdrawnAmount = amountBefore - amountAfter;
+
+      if (withdrawnAmount > 0) {
+        totalWithdrawn += withdrawnAmount;
+        bills = newBills;
+        logMessage(`Withdrew ${formatCurrency(withdrawnAmount)}. Bill counters reset to default.`, 'user', `(cycle ${clockCycle})`);
+        updateDisplays();
+      } else {
+        logMessage('No excess funds to withdraw.', 'vending', `(cycle ${clockCycle})`);
+      }
+    }
+
+    /** Applies manual stock values from the input fields */
+    function applyStockSettings() {
+      transactionCount++;
+      clockCycle++;
+      
+      const potatoInput = document.getElementById('stock-potatoes');
+      if (potatoInput.value) {
+        const newPotatoStock = parseInt(potatoInput.value);
+        if (!isNaN(newPotatoStock) && newPotatoStock >= 0 && newPotatoStock <= maxPotatoes) {
+          potatoesAvailable = newPotatoStock;
+        }
+        potatoInput.value = '';
+      }
+
+      for (const denom in bills) {
+        const input = document.getElementById(`stock-bill-${denom}`);
+        if (input.value) {
+          const newStock = parseInt(input.value);
+          if (!isNaN(newStock) && newStock >= 0 && newStock <= billSettings[denom].max) {
+            bills[denom] = newStock;
+          }
+          input.value = '';
+        }
+      }
+
+      logMessage('Manual stock values applied.', 'user', `(cycle ${clockCycle})`);
+      updateDisplays();
+    }
+
+    /** Opens the settings modal and populates it with current values */
+    function openSettingsModal() {
+      document.getElementById('setting-potato-price').value = potatoPrice;
+      document.getElementById('setting-max-potatoes').value = maxPotatoes;
+      for (const denom in billSettings) {
+        document.getElementById(`setting-default-${denom}`).value = billSettings[denom].default;
+        document.getElementById(`setting-max-${denom}`).value = billSettings[denom].max;
+      }
+      document.getElementById('modal-settings').showModal();
+    }
+
+    /** Applies the new settings from the modal */
+    function applySettings() {
+      clockCycle++;
+      const newPotatoPrice = parseInt(document.getElementById('setting-potato-price').value);
+      if (!isNaN(newPotatoPrice) && newPotatoPrice > 0) {
+        potatoPrice = newPotatoPrice;
+      }
+
+      const newMaxPotatoes = parseInt(document.getElementById('setting-max-potatoes').value);
+      if (!isNaN(newMaxPotatoes) && newMaxPotatoes >= 0) {
+        maxPotatoes = newMaxPotatoes;
+        potatoesAvailable = Math.min(potatoesAvailable, maxPotatoes);
+      }
+
+      for (const denom in billSettings) {
+        const newDefault = parseInt(document.getElementById(`setting-default-${denom}`).value);
+        const newMax = parseInt(document.getElementById(`setting-max-${denom}`).value);
+        if (!isNaN(newDefault) && newDefault >= 0) {
+          billSettings[denom].default = newDefault;
+        }
+        if (!isNaN(newMax) && newMax > 0) {
+          billSettings[denom].max = newMax;
+        }
+      }
+
+      logMessage('Settings updated.', 'user', `(cycle ${clockCycle})`);
+      updateDisplays();
+    }
+    
+    /** Updates the initial placeholder timestamp */
+    function updateInitialTimestamp() {
+      const firstLog = logDisplay.querySelector('p');
+      if (firstLog) {
+        const countSpan = firstLog.querySelector('.log-count');
+        if (countSpan) {
+          countSpan.textContent = `(Tr. #${transactionCount})`;
+          countSpan.setAttribute('data-tooltip', getTimestamp());
+        }
+        // Add cycle count to initial message
+        firstLog.append(` (cycle ${clockCycle})`);
+      }
+    }
+
+    // === INITIALIZATION ===
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initial UI setup
+        updateDisplays();
+        updateInitialTimestamp();
+
+        // === Transparency Toggle Logic ===
+        const transparencyToggle = document.getElementById('transparency-toggle');
+        const container = document.querySelector('.container');
+        const toggleIcon = transparencyToggle.querySelector('i');
+
+        transparencyToggle.addEventListener('click', () => {
+            container.classList.toggle('transparent-mode');
+            
+            if (container.classList.contains('transparent-mode')) {
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        });
+    });
+    
+  </script>
+
+  <!-- Settings Modal -->
+  <dialog id="modal-settings">
+    <article>
+      <header>
+        <a href="#close" aria-label="Close" class="close" onclick="event.preventDefault(); document.getElementById('modal-settings').close();"></a>
+        <h2>Vending Machine Settings</h2>
+      </header>
+      <form>
+          <label for="setting-potato-price"><h5>Potato Price</h5></label>
+        <input type="number" id="setting-potato-price" name="setting-potato-price">
+
+          <label for="setting-max-potatoes"><h5>Max Potatoes</h5></label>
+        <input type="number" id="setting-max-potatoes" name="setting-max-potatoes">
+        
+        <hr>
+        <h5>Bill Configuration</h5>
+        
+        <!-- Bill Type 1 -->
+        <label>$1 Bills</label>
+        <div class="grid">
+          <input type="number" id="setting-default-1" placeholder="Default Count">
+          <input type="number" id="setting-max-1" placeholder="Max Count">
+        </div>
+        
+        <!-- Bill Type 2 -->
+        <label>$2 Bills</label>
+        <div class="grid">
+          <input type="number" id="setting-default-2" placeholder="Default Count">
+          <input type="number" id="setting-max-2" placeholder="Max Count">
+        </div>
+        
+        <!-- Bill Type 5 -->
+        <label>$5 Bills</label>
+        <div class="grid">
+          <input type="number" id="setting-default-5" placeholder="Default Count">
+          <input type="number" id="setting-max-5" placeholder="Max Count">
+        </div>
+      </form>
+      <footer>
+        <button class="secondary" onclick="document.getElementById('modal-settings').close()">Cancel</button>
+        <button onclick="applySettings(); document.getElementById('modal-settings').close()">Save</button>
+      </footer>
+    </article>
+  </dialog>
+
+  <button id="transparency-toggle" class="contrast" style="position: fixed; bottom: 20px; right: 20px; width: auto; aspect-ratio: 1 / 1; text-align: center;">
+    <i class="fas fa-eye"></i>
+  </button>
+
+</body>
+</html>
