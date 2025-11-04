@@ -21,7 +21,7 @@
     body {
       padding: 0;
       margin: 0;
-      background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('potato_mat.png');
+      background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('assets/potato_mat.jpg');
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -140,7 +140,7 @@
 
       <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Message Log</h4>
       <div id="message-log-styled">
-        <p><span class="log-badge-vending">&lt;V&gt;</span><span class="log-count" data-tooltip="Machine initialized" data-placement="right">(Tr. #0)</span> Machine ready...</p>
+        <p><span class="log-badge-vending">[V]</span><span class="log-count" data-tooltip="Machine initialized" data-placement="right">(Tr. #0)</span> Machine ready...</p>
       </div>
 
       <hr style="margin-top: 2rem;">
@@ -200,7 +200,7 @@
       
       <hr>
       
-      <label style="margin-top: 1em;">
+      <label style="margin-top: 0.5rem;">
         <input type="checkbox" id="auto-refund-check" checked disabled> Auto-refund
       </label>
       <div class="status-display">
@@ -343,8 +343,8 @@
       const timestamp = getTimestamp();
       const logEntry = document.createElement('p');
       const badge = source === 'user' 
-        ? '<span class="log-badge-user">&lt;U&gt;</span>' 
-        : '<span class="log-badge-vending">&lt;V&gt;</span>';
+        ? '<span class="log-badge-user">[U]</span>' 
+        : '<span class="log-badge-vending">[V]</span>';
       logEntry.innerHTML = `${badge}<span class="log-count" data-tooltip="${timestamp}" data-placement="right">(Tr. #${transactionCount})</span> ${message} ${cycleString}`;
       logDisplay.prepend(logEntry);
     }
